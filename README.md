@@ -20,12 +20,12 @@ In this example, we use the `for_each` meta-argument to generate multiple resour
 # We also provide a de
 variable "security_group_rules" {
   type = map(object({
-    type             = string
+    type             = optional(string)
     from_port        = number
     to_port          = number
-    protocol         = string
-    cidr_blocks      = list(string)
-    ipv6_cidr_blocks = list(string)
+    protocol         = optional(string)
+    cidr_blocks      = optional(list(string))
+    ipv6_cidr_blocks = optional(list(string))
   }))
   description = "Security group rules for the EC2 instance"
   # provide a default set of rules allowing SSH access from the bastion host
@@ -52,10 +52,11 @@ resource "aws_security_group" "example" {
 resource "aws_security_group_rule" "example" {
   for_each = var.security_group_rules
 
-  type              = each.value.type
+  description       = each.key
+  type              = try(each.value.type, "ingress")
   from_port         = each.value.from_port
   to_port           = each.value.to_port
-  protocol          = each.value.protocol
+  protocol          = try(each.value.protocol, "tcp")
   cidr_blocks       = coalesce(each.value.cidr_blocks, var.ingress_ipv4_cidr_allow)
   ipv6_cidr_blocks  = coalesce(each.value.ipv6_cidr_blocks, var.ingress_ipv6_cidr_allow)
   security_group_id = aws_security_group.example.id
@@ -71,7 +72,8 @@ In the code above we:
 2. Declare the `security_group_rule` resource
 3. The first line inside the resource tells Terraform that we're going to create multiple resources using the contents of the `var.security_group_rules` input variable
 4. The rest of the code use the list of key/values from each member of the map to provide the values for each resource parameter
-5. Finally, we use `coalesce()` to provide default values for the `cidr_blocks` and `ipv6_cidr_blocks` parameters.
+5. We use `try()` to provide default values and make some sub-keys optional.
+6. Finally, we use `coalesce()` to provide default values for the `cidr_blocks` and `ipv6_cidr_blocks` parameters.
    - Coalesce will return the value of the first argument that is no an empty string, or `null`. If all the parameters are `null` or an empty string, it will return `null`.
 
 ## Dynamic blocks
@@ -206,4 +208,5 @@ Note that in this case, we end up with two `ebs_block_device` blocks, and the de
 - [dynamic Blocks](https://developer.hashicorp.com/terraform/language/expressions/dynamic-blocks)
 - [The `for_each` meta-argument](https://developer.hashicorp.com/terraform/language/meta-arguments/for_each)
 - [coalesce Function](https://developer.hashicorp.com/terraform/language/functions/coalesce)
+- [Optional Object Type Attributes](https://developer.hashicorp.com/terraform/language/expressions/type-constraints#optional-object-type-attributes)
 - [AWS EC2 instance - EBS block devices](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance#ebs-ephemeral-and-root-block-devices)

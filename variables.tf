@@ -57,12 +57,12 @@ variable "ebs_volumes" {
 
 variable "security_group_rules" {
   type = map(object({
-    type             = string
+    type             = optional(string)
     from_port        = number
     to_port          = number
-    protocol         = string
-    cidr_blocks      = list(string)
-    ipv6_cidr_blocks = list(string)
+    protocol         = optional(string)
+    cidr_blocks      = optional(list(string))
+    ipv6_cidr_blocks = optional(list(string))
   }))
   description = "Security group rules for the EC2 instance"
   # provide a default set of rules allowing SSH access from the bastion host

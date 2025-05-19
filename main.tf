@@ -26,10 +26,11 @@ resource "aws_security_group" "example" {
 resource "aws_security_group_rule" "example" {
   for_each = var.security_group_rules
 
-  type              = each.value.type
+  description       = each.key
+  type              = try(each.value.type, "ingress")
   from_port         = each.value.from_port
   to_port           = each.value.to_port
-  protocol          = each.value.protocol
+  protocol          = try(each.value.protocol, "tcp")
   cidr_blocks       = coalesce(each.value.cidr_blocks, var.ingress_ipv4_cidr_allow)
   ipv6_cidr_blocks  = coalesce(each.value.ipv6_cidr_blocks, var.ingress_ipv6_cidr_allow)
   security_group_id = aws_security_group.example.id
